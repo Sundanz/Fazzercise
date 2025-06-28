@@ -6,6 +6,27 @@
   <title>Fazzercize Randomizer</title>
   <style>
     body {
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    @media (max-width: 600px) {
+      .rep-box {
+        width: 40px;
+        height: 40px;
+        font-size: 1.5rem;
+      }
+      .box {
+        font-size: 1.4rem;
+        min-width: auto;
+        width: 90%;
+      }
+      button {
+        padding: 1.5rem 2rem;
+        font-size: 1.2rem;
+      }
+    }
+
+    body {
       font-family: sans-serif;
       background: #1e1e1e;
       color: #f2f2f2;
@@ -32,34 +53,34 @@
       color: white;
       border-color: white;
     }
-    #exercise-reps {
-      color: #00bfff;
-      border-color: #00bfff;
+    .rep-box-container {
+      display: flex;
+      gap: 10px;
+      margin: 1rem;
+    }
+    .rep-box {
+      font-size: 2rem;
+      border: 2px solid black;
+      border-radius: 10px;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: black;
+    }
+    .unit-label {
+      color: white;
+      margin-top: -10px;
+      text-align: center;
+      font-size: 1.8rem;
     }
     #exercise-advanced {
       color: yellow;
       border-color: yellow;
       white-space: pre-line;
       margin-top: 2rem;
-    }
-    #loading-bar-container {
-      width: 300px;
-      height: 20px;
-      border: 2px solid green;
-      border-radius: 10px;
-      margin-top: 1rem;
-      overflow: hidden;
-      display: none;
-    }
-    #loading-bar {
-      height: 100%;
-      background-color: green;
-      width: 0%;
-      animation: load 0.5s linear forwards;
-    }
-    @keyframes load {
-      0% { width: 0%; }
-      100% { width: 100%; }
     }
     button {
       background: red;
@@ -81,79 +102,89 @@
 <body>
   <h1>Fazzercize Randomizer</h1>
   <div id="exercise-name" class="box">Press the button to start!</div>
-  <div id="exercise-reps" class="box"></div>
+  <div class="rep-box-container">
+    <div id="rep-digit-1" class="rep-box">-</div>
+    <div id="rep-digit-2" class="rep-box">-</div>
+  </div>
+  <div class="unit-label" id="rep-unit"></div>
   <div id="exercise-advanced" class="box"></div>
-  <div id="loading-bar-container"><div id="loading-bar"></div></div>
-  <button onclick="generateExercise()">GO</button>
+  <button id="generate-btn">GO</button>
 
   <script>
     const exercises = [
-      { name: "Alternating Lunges (each side)", reps: "8-20", advanced: "Add torso twist" },
-      { name: "Ankle Taps (each side)", reps: "5-15", advanced: "Add 10" },
-      { name: "Bicycle Kicks (each side)", reps: "5-15", advanced: "Add 10" },
-      { name: "Burpees", reps: "3-15", advanced: "Chest to ground, jump at top" },
-      { name: "Calf Raises", reps: "8-15", advanced: "Do for each leg separately" },
-      { name: "Crunches", reps: "8-15", advanced: "Add 5" },
-      { name: "Curtsy Lunges (each side)", reps: "8-15", advanced: "Add 10" },
-      { name: "Flutter kicks", reps: "15/20/25/30/40s", advanced: "Add 10s" },
-      { name: "Frog Squats", reps: "8-15", advanced: "Add 10" },
-      { name: "Gorilla Press", reps: "10-20", advanced: "Add 10" },
-      { name: "Fast High Knees", reps: "15/20/25/30/35s", advanced: "Add 10s" },
-      { name: "Hollow Hold", reps: "10-25s", advanced: "Flutter Arms" },
-      { name: "Kick Sits (each side)", reps: "4-10", advanced: "Do them without complaining" },
-      { name: "Leg Lowers", reps: "5-15", advanced: "Add 5" },
-      { name: "Mountain Climbers (each side)", reps: "8-25", advanced: "Crossbody Mountain Climbers" },
-      { name: "Plank Swivels (each side)", reps: "4-12", advanced: "Add 5" },
-      { name: "Press Ups", reps: "10-25", advanced: "Lift hands off ground each time" },
-      { name: "Reverse Crunch", reps: "8-15", advanced: "Add a torso twist at the top" },
-      { name: "Russian Twist (each side)", reps: "5-15", advanced: "Feet lifted off ground, add 5" },
-      { name: "Shoulder Taps (each side)", reps: "10-20", advanced: "Add 10" },
-      { name: "Shuttle Run or Lap", reps: "Once", advanced: "Do twice" },
-      { name: "Side Plank (each side)", reps: "20/25/30/35/40s", advanced: "Lower and raise hips" },
-      { name: "Skaters (each side)", reps: "5-12", advanced: "Add 10" },
-      { name: "Squat Hold or Wall Sit", reps: "30/35/40/45/50/60s", advanced: "Raise and lower heels" },
-      { name: "Squats", reps: "10-40", advanced: "Jump Squats instead" },
-      { name: "Star Jumps", reps: "15-25", advanced: "Explosive Jacks instead" },
-      { name: "Thread the Needle (each side)", reps: "5-12", advanced: "Add 5" },
-      { name: "Tricep Dips", reps: "10-20", advanced: "Diamond Press Ups instead" },
-      { name: "Tuck Jumps", reps: "5-12", advanced: "Add 10" },
-      { name: "Yoga Planks (each side)", reps: "8-15", advanced: "Add 5" },
-      { name: "Glute Bridges - Alternate leg extention", reps: "5-15", advanced: "Keep knees squeezed together" }
+      { name: "Ankle Taps", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Bicycle Kicks", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Burpees", reps: "3-15", unit: "Reps", advanced: "Chest to ground, and jump at top" },
+      { name: "Calf Raises", reps: "8-15", unit: "Reps", advanced: "Do for each leg separately" },
+      { name: "Crunches", reps: "8-15", unit: "Reps", advanced: "Add 5" },
+      { name: "Curtsy Lunges", reps: "8-15", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Fast High Knees", reps: "15/20/25/30/35", unit: "Seconds", advanced: "Add 10s" },
+      { name: "Flutter Kicks", reps: "15/20/25/30/40", unit: "Seconds", advanced: "Add 10s" },
+      { name: "Frog Squats", reps: "8-15", unit: "Reps", advanced: "Add 10" },
+      { name: "Glute Bridges - Alternate leg extension", reps: "5-15", unit: "Reps", advanced: "Keep knees squeezed together" },
+      { name: "Gorilla Press", reps: "10-20", unit: "Reps", advanced: "Add 10" },
+      { name: "Hollow Hold", reps: "10-25", unit: "Seconds", advanced: "Flutter your arms" },
+      { name: "Kick Sits", reps: "4-10", unit: "Reps", advanced: "Do them without complaining", side: true },
+      { name: "Leg Lowers", reps: "5-15", unit: "Reps", advanced: "Add 5" },
+      { name: "Mountain Climbers", reps: "8-25", unit: "Reps", advanced: "Crossbody Mountain Climbers", side: true },
+      { name: "Plank", reps: "30/40/50", unit: "Seconds", advanced: "Add Plank", side: true },
+      { name: "Plank Swivels", reps: "4-12", unit: "Reps", advanced: "Add 5", side: true },
+      { name: "Press Ups", reps: "10-25", unit: "Reps", advanced: "Lift hands off ground each time" },
+      { name: "Reverse Crunch", reps: "8-15", unit: "Reps", advanced: "Add a torso twist at the top" },
+      { name: "Russian Twist", reps: "5-15", unit: "Reps", advanced: "Feet lifted off ground, add 5", side: true },
+      { name: "Shuttle Run or Lap", reps: "1", unit: "Reps", advanced: "Do twice" },
+      { name: "Side Plank", reps: "20/25/30/35/40", unit: "Seconds", advanced: "Lower and raise hips", side: true },
+      { name: "Shoulder Taps", reps: "10-20", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Skaters", reps: "5-12", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Squat Hold or Wall Sit", reps: "30/35/40/45/50/60", unit: "Seconds", advanced: "Raise and lower heels" },
+      { name: "Squats", reps: "10-40", unit: "Reps", advanced: "Jump Squats instead" },
+      { name: "Star Jumps", reps: "15-25", unit: "Reps", advanced: "Explosive Jacks instead" },
+      { name: "Thread the Needle", reps: "5-12", unit: "Reps", advanced: "Add 5", side: true },
+      { name: "Tricep Dips", reps: "10-20", unit: "Reps", advanced: "Diamond Press Ups instead" },
+      { name: "Tuck Jumps", reps: "5-12", unit: "Reps", advanced: "Add 10" },
+      { name: "Yoga Planks", reps: "8-15", unit: "Reps", advanced: "Add 5", side: true }
     ];
 
-    function generateExercise() {
-      document.getElementById("exercise-name").textContent = "";
-      document.getElementById("exercise-reps").textContent = "";
-      document.getElementById("exercise-advanced").textContent = "";
-      const loadingBar = document.getElementById("loading-bar");
-      const container = document.getElementById("loading-bar-container");
-      loadingBar.style.width = "0%";
-      container.style.display = "block";
-      loadingBar.style.animation = "none";
-      loadingBar.offsetHeight;
-      loadingBar.style.animation = null;
-
-      setTimeout(() => {
-        const exercise = exercises[Math.floor(Math.random() * exercises.length)];
-        let repsText;
-
-        if (exercise.reps.includes('/')) {
-          const options = exercise.reps.split('/');
-          repsText = options[Math.floor(Math.random() * options.length)];
-        } else if (exercise.reps.includes('-')) {
-          const [min, max] = exercise.reps.split('-').map(val => parseInt(val));
-          repsText = Math.floor(Math.random() * (max - min + 1)) + min;
-        } else {
-          repsText = exercise.reps;
+    function animateDigits(targetNumber, unit, exercise) {
+      const digit1 = document.getElementById("rep-digit-1");
+      const digit2 = document.getElementById("rep-digit-2");
+      const unitLabel = document.getElementById("rep-unit");
+      let i = 0;
+      const spin = setInterval(() => {
+        digit1.textContent = Math.floor(Math.random() * 10);
+        digit2.textContent = Math.floor(Math.random() * 10);
+        i++;
+        if (i >= 10) {
+          clearInterval(spin);
+          const padded = targetNumber.toString().padStart(2, '0');
+          digit1.textContent = padded[0];
+          digit2.textContent = padded[1];
+          unitLabel.textContent = (unit === 's' ? 'Seconds' : 'Reps') + (exercise.side ? ' (each side)' : '');
         }
-
-        document.getElementById("exercise-name").textContent = `${exercise.name}`;
-        document.getElementById("exercise-reps").textContent = `Reps: ${repsText}${exercise.reps.includes('s') && !repsText.toString().includes('s') ? 's' : ''}`;
-        document.getElementById("exercise-advanced").textContent = `Advanced Option:
-${exercise.advanced || "None"}`;
-        container.style.display = "none";
-      }, 500);
+      }, 50);
     }
+
+    function generateExercise() {
+      const exercise = exercises[Math.floor(Math.random() * exercises.length)];
+      let repsText;
+      if (exercise.reps.includes('/')) {
+        const options = exercise.reps.split('/');
+        repsText = options[Math.floor(Math.random() * options.length)];
+      } else if (exercise.reps.includes('-')) {
+        const [min, max] = exercise.reps.split('-').map(val => parseInt(val));
+        repsText = Math.floor(Math.random() * (max - min + 1)) + min;
+      } else {
+        repsText = exercise.reps;
+      }
+      const unit = exercise.unit === "Seconds" ? 's' : 'reps';
+      const numOnly = parseInt(repsText);
+
+      document.getElementById("exercise-name").textContent = exercise.name;
+      document.getElementById("exercise-advanced").textContent = `Advanced Option:\n${exercise.advanced || "None"}`;
+      animateDigits(numOnly, unit, exercise);
+    }
+
+    document.getElementById("generate-btn").addEventListener("click", generateExercise);
   </script>
 </body>
 </html>
