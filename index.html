@@ -8,6 +8,15 @@
     body {
       padding: 1rem;
       box-sizing: border-box;
+      font-family: sans-serif;
+      background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
+      color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
     @media (max-width: 600px) {
       .rep-box {
@@ -25,20 +34,19 @@
         font-size: 1.2rem;
       }
     }
-
-    body {
-      font-family: sans-serif;
-      background: #1e1e1e;
-      color: #f2f2f2;
+    h1 {
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: #2b2b2b;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      width: 100%;
+      max-width: 400px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      margin-bottom: 2rem;
     }
     .box {
       font-size: 1.8rem;
@@ -60,15 +68,17 @@
     }
     .rep-box {
       font-size: 2rem;
-      border: 2px solid black;
+      font-weight: bold;
+      border: 2px solid #999;
       border-radius: 10px;
       width: 60px;
       height: 60px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: white;
+      background: linear-gradient(135deg, #ffffff, #e6e6e6);
       color: black;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .unit-label {
       color: white;
@@ -83,32 +93,44 @@
       margin-top: 2rem;
     }
     button {
-      background: red;
+      background: #ff4d4d;
       color: white;
       border: none;
-      padding: 2rem 3rem;
+      padding: 1.2rem 2rem;
       font-size: 1.5rem;
-      border-radius: 50%;
+      border-radius: 12px;
       cursor: pointer;
-      transition: background 0.3s ease;
-      box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+      transition: background 0.3s ease, transform 0.1s ease;
+      box-shadow: 0 0 20px rgba(255, 77, 77, 0.6);
       margin-top: 2rem;
+      width: 100%;
+      max-width: 300px;
     }
     button:active {
-      background: darkred;
+      background: #ff1a1a;
+      transform: scale(0.95);
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
   <h1>Fazzercize Randomizer</h1>
-  <div id="exercise-name" class="box">Press the button to start!</div>
-  <div class="rep-box-container">
-    <div id="rep-digit-1" class="rep-box">-</div>
-    <div id="rep-digit-2" class="rep-box">-</div>
+  <div class="card">
+    <div id="exercise-name" class="box fade-in" aria-live="polite">Press the button to start!</div>
+    <div class="rep-box-container">
+      <div id="rep-digit-1" class="rep-box">-</div>
+      <div id="rep-digit-2" class="rep-box">-</div>
+    </div>
+    <div class="unit-label" id="rep-unit"></div>
+    <div id="exercise-advanced" class="box"></div>
+    <button id="generate-btn">GO</button>
   </div>
-  <div class="unit-label" id="rep-unit"></div>
-  <div id="exercise-advanced" class="box"></div>
-  <button id="generate-btn">GO</button>
 
   <script>
     const exercises = [
@@ -145,6 +167,10 @@
       { name: "Yoga Planks", reps: "8-15", unit: "Reps", advanced: "Add 5", side: true }
     ];
 
+    function padNumber(n) {
+      return n.toString().padStart(2, '0');
+    }
+
     function animateDigits(targetNumber, unit, exercise) {
       const digit1 = document.getElementById("rep-digit-1");
       const digit2 = document.getElementById("rep-digit-2");
@@ -156,7 +182,7 @@
         i++;
         if (i >= 10) {
           clearInterval(spin);
-          const padded = targetNumber.toString().padStart(2, '0');
+          const padded = padNumber(targetNumber);
           digit1.textContent = padded[0];
           digit2.textContent = padded[1];
           unitLabel.textContent = (unit === 's' ? 'Seconds' : 'Reps') + (exercise.side ? ' (each side)' : '');
@@ -179,9 +205,21 @@
       const unit = exercise.unit === "Seconds" ? 's' : 'reps';
       const numOnly = parseInt(repsText);
 
+      const nameBox = document.getElementById("exercise-name");
+      nameBox.classList.remove("fade-in");
+      void nameBox.offsetWidth; // force reflow
+      nameBox.classList.add("fade-in");
+
       document.getElementById("exercise-name").textContent = exercise.name;
       document.getElementById("exercise-advanced").textContent = `Advanced Option:\n${exercise.advanced || "None"}`;
-      animateDigits(numOnly, unit, exercise);
+
+      if (isNaN(numOnly)) {
+        document.getElementById("rep-digit-1").textContent = '-';
+        document.getElementById("rep-digit-2").textContent = '-';
+        document.getElementById("rep-unit").textContent = exercise.unit + (exercise.side ? ' (each side)' : '');
+      } else {
+        animateDigits(numOnly, unit, exercise);
+      }
     }
 
     document.getElementById("generate-btn").addEventListener("click", generateExercise);
