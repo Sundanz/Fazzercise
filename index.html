@@ -25,11 +25,13 @@
         font-size: 1.5rem;
       }
       .box {
+      transition: background 0.3s ease, color 0.3s ease;
         font-size: 1.4rem;
         min-width: auto;
         width: 90%;
       }
       button {
+      /* Generate button - optimized */
         padding: 1.5rem 2rem;
         font-size: 1.2rem;
       }
@@ -103,7 +105,8 @@
       border-radius: 12px;
       cursor: pointer;
       transition: background 0.3s ease, transform 0.1s ease;
-      box-shadow: 0 0 20px rgba(40, 167, 69, 0.6);
+      /* Removed box-shadow for a flatter design */
+      
       margin-top: 2rem;
       width: 100%;
       max-width: 300px;
