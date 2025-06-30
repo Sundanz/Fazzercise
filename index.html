@@ -19,108 +19,46 @@
       margin: 0;
     }
     @media (max-width: 600px) {
-      .rep-box {
-        width: 40px;
-        height: 40px;
-        font-size: 1.5rem;
-      }
-      .box {
-      transition: background 0.3s ease, color 0.3s ease;
-        font-size: 1.4rem;
-        min-width: auto;
-        width: 90%;
-      }
-      button {
-      /* Generate button - optimized */
-        padding: 1.5rem 2rem;
-        font-size: 1.2rem;
-      }
+      .rep-box { width: 40px; height: 40px; font-size: 1.5rem; }
+      .box { font-size: 1.4rem; width: 90%; min-width: unset; }
+      button { padding: 1.5rem 2rem; font-size: 1.2rem; }
     }
-    h1 {
-      margin-bottom: 2rem;
-    }
+    h1 { margin-bottom: 2rem; }
     .card {
       background: #2b2b2b;
       border-radius: 20px;
       padding: 2rem;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      width: 100%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      width: 100%; max-width: 400px;
+      display: flex; flex-direction: column; align-items: center;
     }
     .box {
-      font-size: 1.8rem;
-      margin: 0.5rem 0;
-      padding: 1rem 2rem;
-      border: 2px solid;
-      border-radius: 12px;
-      min-width: 300px;
+      font-size: 1.8rem; margin: 0.5rem 0; padding: 1rem 2rem;
+      border: 2px solid; border-radius: 12px; min-width: 300px;
       text-align: center;
     }
-    #exercise-name {
-      background: white;
-      color: black;
-      border-color: white;
-      font-weight: bold;
-    }
-    .rep-box-container {
-      display: flex;
-      gap: 10px;
-      margin: 1rem;
-    }
+    #exercise-name { background: white; color: black; border-color: white; font-weight: bold; }
+    .rep-box-container { display: flex; gap: 10px; margin: 1rem; }
     .rep-box {
-      font-size: 2rem;
-      font-weight: bold;
-      border: 2px solid #999;
-      border-radius: 10px;
-      width: 60px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #ffffff, #e6e6e6);
-      color: black;
+      font-size: 2rem; font-weight: bold;
+      border: 2px solid #999; border-radius: 10px; width: 60px; height: 60px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #fff, #e6e6e6); color: black;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    .unit-label {
-      color: white;
-      margin-top: -10px;
-      text-align: center;
-      font-size: 1.8rem;
-    }
-    #exercise-advanced {
-      color: yellow;
-      border-color: yellow;
-      white-space: pre-line;
-      margin-top: 2rem;
-    }
+    .unit-label { color: white; margin-top: -10px; text-align: center; font-size: 1.8rem; }
+    #exercise-advanced { color: yellow; border-color: yellow; white-space: pre-line; margin-top: 2rem; }
     button {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 1.2rem 2rem;
-      font-size: 1.5rem;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background 0.3s ease, transform 0.1s ease;
-      /* Removed box-shadow for a flatter design */
-      
-      margin-top: 2rem;
-      width: 100%;
-      max-width: 300px;
+      background: #28a745; color: white; border: none; padding: 1.2rem 2rem; font-size: 1.5rem;
+      border-radius: 12px; cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      margin-top: 2rem; width: 100%; max-width: 300px;
     }
-    button:active {
-      background: #218838;
-      transform: scale(0.95);
-    }
-    .fade-in {
-      animation: fadeIn 0.3s ease-in;
-    }
+    button:active { background: #218838; transform: scale(0.95); }
+    .fade-in { animation: fadeIn 0.3s; }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(-10px);}
+      to { opacity: 1; transform: translateY(0);}
     }
   </style>
 </head>
@@ -136,8 +74,8 @@
     <div id="exercise-advanced" class="box"></div>
     <button id="generate-btn">GO</button>
   </div>
-
   <script>
+    // --- DATA ---
     const exercises = [
       { name: "Ankle Taps", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
       { name: "Bicycle Kicks", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
@@ -171,63 +109,86 @@
       { name: "Tuck Jumps", reps: "5-12", unit: "Reps", advanced: "Add 10" },
       { name: "Yoga Planks", reps: "8-15", unit: "Reps", advanced: "Add 5", side: true }
     ];
+    const RECENT_LIMIT = 10;
+    let recentExercises = [];
+
+    // --- HELPERS ---
+    const $ = id => document.getElementById(id);
 
     function padNumber(n) {
       return n.toString().padStart(2, '0');
     }
 
-    function animateDigits(targetNumber, unit, exercise) {
-      const digit1 = document.getElementById("rep-digit-1");
-      const digit2 = document.getElementById("rep-digit-2");
-      const unitLabel = document.getElementById("rep-unit");
+    function parseReps(reps) {
+      if (reps.includes('/')) {
+        const options = reps.split('/').map(r => r.trim());
+        return options[Math.floor(Math.random() * options.length)];
+      }
+      if (reps.includes('-')) {
+        const [min, max] = reps.split('-').map(Number);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+      return reps;
+    }
+
+    function getRandomExerciseIndex() {
+      // Try to avoid repeats in the recent queue
+      const allIndices = exercises.map((_, i) => i);
+      const available = allIndices.filter(i => !recentExercises.includes(i));
+      let idx;
+      if (available.length === 0) {
+        // If all used, allow repeat
+        idx = allIndices[Math.floor(Math.random() * allIndices.length)];
+      } else {
+        idx = available[Math.floor(Math.random() * available.length)];
+      }
+      // Update recent
+      recentExercises.push(idx);
+      if (recentExercises.length > RECENT_LIMIT) recentExercises.shift();
+      return idx;
+    }
+
+    function animateDigits(number, unit, side) {
+      const d1 = $("rep-digit-1"), d2 = $("rep-digit-2"), unitLabel = $("rep-unit");
       let i = 0;
-      const spin = setInterval(() => {
-        digit1.textContent = Math.floor(Math.random() * 10);
-        digit2.textContent = Math.floor(Math.random() * 10);
-        i++;
-        if (i >= 10) {
-          clearInterval(spin);
-          const padded = padNumber(targetNumber);
-          digit1.textContent = padded[0];
-          digit2.textContent = padded[1];
-          unitLabel.textContent = (unit === 's' ? 'Seconds' : 'Reps') + (exercise.side ? ' (each side)' : '');
+      const spinner = setInterval(() => {
+        d1.textContent = Math.floor(Math.random() * 10);
+        d2.textContent = Math.floor(Math.random() * 10);
+        if (++i >= 10) {
+          clearInterval(spinner);
+          const padded = padNumber(number);
+          d1.textContent = padded[0];
+          d2.textContent = padded[1];
+          unitLabel.textContent = (unit === "Seconds" ? "Seconds" : "Reps") + (side ? " (each side)" : "");
         }
       }, 50);
     }
 
+    // --- MAIN FUNCTION ---
     function generateExercise() {
-      const exercise = exercises[Math.floor(Math.random() * exercises.length)];
-      let repsText;
-      if (exercise.reps.includes('/')) {
-        const options = exercise.reps.split('/');
-        repsText = options[Math.floor(Math.random() * options.length)];
-      } else if (exercise.reps.includes('-')) {
-        const [min, max] = exercise.reps.split('-').map(val => parseInt(val));
-        repsText = Math.floor(Math.random() * (max - min + 1)) + min;
-      } else {
-        repsText = exercise.reps;
-      }
-      const unit = exercise.unit === "Seconds" ? 's' : 'reps';
-      const numOnly = parseInt(repsText);
-
-      const nameBox = document.getElementById("exercise-name");
+      const idx = getRandomExerciseIndex();
+      const exercise = exercises[idx];
+      const repsRaw = parseReps(exercise.reps);
+      const repsNum = parseInt(repsRaw);
+      const nameBox = $("exercise-name");
       nameBox.classList.remove("fade-in");
-      void nameBox.offsetWidth; // force reflow
+      void nameBox.offsetWidth;
       nameBox.classList.add("fade-in");
 
-      document.getElementById("exercise-name").textContent = exercise.name;
-      document.getElementById("exercise-advanced").textContent = `Advanced Option:\n${exercise.advanced || "None"}`;
+      nameBox.textContent = exercise.name;
+      $("exercise-advanced").textContent = `Advanced Option:\n${exercise.advanced || "None"}`;
 
-      if (isNaN(numOnly)) {
-        document.getElementById("rep-digit-1").textContent = '-';
-        document.getElementById("rep-digit-2").textContent = '-';
-        document.getElementById("rep-unit").textContent = exercise.unit + (exercise.side ? ' (each side)' : '');
+      if (isNaN(repsNum)) {
+        $("rep-digit-1").textContent = '-';
+        $("rep-digit-2").textContent = '-';
+        $("rep-unit").textContent = exercise.unit + (exercise.side ? " (each side)" : "");
       } else {
-        animateDigits(numOnly, unit, exercise);
+        animateDigits(repsNum, exercise.unit, exercise.side);
       }
     }
 
-    document.getElementById("generate-btn").addEventListener("click", generateExercise);
+    // --- EVENT ---
+    $("generate-btn").addEventListener("click", generateExercise);
   </script>
 </body>
 </html>
