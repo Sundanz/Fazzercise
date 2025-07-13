@@ -42,6 +42,7 @@
       color: black;
       border-color: white;
       font-weight: bold;
+      font-size: 2.2rem;
       height: 3.5em;
       display: flex;
       align-items: center;
@@ -50,7 +51,7 @@
     }
     .rep-box-container { display: flex; gap: 10px; margin: 1rem; }
     .rep-box {
-      font-size: 2rem; font-weight: bold;
+      font-size: 2.4rem; font-weight: bold;
       border: 2px solid #999; border-radius: 10px; width: 60px; height: 60px;
       display: flex; align-items: center; justify-content: center;
       background: linear-gradient(135deg, #fff, #e6e6e6); color: black;
@@ -61,7 +62,9 @@
       height: 4em;
       display: flex;
       align-items: center;
-      justify-content: center; color: yellow; border-color: yellow; white-space: pre-line; margin-top: 2rem; }
+      justify-content: center;
+      color: yellow;
+      font-size: 1.6rem; border-color: yellow; white-space: pre-line; margin-top: 2rem; }
     button {
       background: #28a745; color: white; border: none; padding: 1.2rem 2rem; font-size: 1.5rem;
       border-radius: 12px; cursor: pointer;
@@ -85,33 +88,33 @@
   </div>
 
   <script>
-    const RECENT_LIMIT = 10;
+    const RECENT_LIMIT = 15;
 let recentExercises = [];
 const exercises = [
   { name: "Ankle Taps", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
   { name: "Bicycle Kicks", reps: "5-15", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Burpees", reps: "5-15", unit: "Reps", advanced: "Chest to ground, and Jump at top" },
+  { name: "Burpees", reps: "3-15", unit: "Reps", advanced: "Chest to ground, and Jump at top" },
   { name: "Calf Raises", reps: "8-15", unit: "Reps", advanced: "Do for each leg separately" },
   { name: "Crunches", reps: "8-15", unit: "Reps", advanced: "Add 5" },
-  { name: "Curtsy Lunges", reps: "5-10", unit: "Reps", advanced: "Add 10", side: true },
+  { name: "Curtsy Lunges", reps: "8-15", unit: "Reps", advanced: "Add 10", side: true },
   { name: "Fast High Knees", reps: "15/20/25/30/35", unit: "Seconds", advanced: "Add 10s" },
-  { name: "Flutter Kicks", reps: "15/20/25/30/35", unit: "Seconds", advanced: "Add 10s" },
-  { name: "Frog Squats", reps: "8-15", unit: "Reps", advanced: "Add 5" },
+  { name: "Flutter Kicks", reps: "15/20/25/30/40", unit: "Seconds", advanced: "Add 10s" },
+  { name: "Frog Squats", reps: "8-15", unit: "Reps", advanced: "Add 10" },
   { name: "Glute Bridges with leg extension", reps: "5-15", unit: "Reps", advanced: "Keep knees squeezed together" },
-  { name: "Gorilla Press", reps: "10-20", unit: "Reps", advanced: "Add 5" },
+  { name: "Gorilla Press", reps: "10-20", unit: "Reps", advanced: "Add 10" },
   { name: "Hollow Hold", reps: "10-25", unit: "Seconds", advanced: "Flutter your arms" },
   { name: "Kick Sits", reps: "4-10", unit: "Reps", advanced: "Do them without complaining", side: true },
   { name: "Leg Lowers", reps: "5-15", unit: "Reps", advanced: "Add 5" },
   { name: "Mountain Climbers", reps: "8-25", unit: "Reps", advanced: "Crossbody Mountain Climbers", side: true },
-  { name: "Plank", reps: "30/40/50", unit: "Seconds", advanced: "Rock forwards and backwards", side: true },
+  { name: "Plank", reps: "30/40/50", unit: "Seconds", advanced: "Rock body forwards and backwards", side: true },
   { name: "Plank Swivels", reps: "4-12", unit: "Reps", advanced: "Add 5", side: true },
   { name: "Press Ups", reps: "10-25", unit: "Reps", advanced: "Lift hands off ground each time" },
   { name: "Reverse Crunch", reps: "8-15", unit: "Reps", advanced: "Add a torso twist at the top" },
   { name: "Russian Twist", reps: "5-15", unit: "Reps", advanced: "Feet off ground, add 5", side: true },
   { name: "Shuttle Run or Lap", reps: "1-2", unit: "Reps", advanced: "Pressup at each cone or corner" },
   { name: "Side Plank", reps: "20/25/30/35/40", unit: "Seconds", advanced: "Lower and raise hips", side: true },
-  { name: "Shoulder Taps", reps: "8-15", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Skaters", reps: "5-14", unit: "Reps", advanced: "Add 10", side: true },
+  { name: "Shoulder Taps", reps: "10-20", unit: "Reps", advanced: "Add 10", side: true },
+  { name: "Skaters", reps: "5-12", unit: "Reps", advanced: "Add 10", side: true },
   { name: "Squat Hold or Wall Sit", reps: "30/35/40/45/50/60", unit: "Seconds", advanced: "Raise and lower heels" },
   { name: "Squats", reps: "10-40", unit: "Reps", advanced: "Jump Squats instead" },
   { name: "Star Jumps", reps: "15-25", unit: "Reps", advanced: "Explosive Jacks instead" },
