@@ -43,11 +43,17 @@
       border-color: white;
       font-weight: bold;
       font-size: 2.2rem;
-      height: 3.5em;
+      /* fixed visual height (2 lines clamp) to prevent jitter */
+      height: 4.4rem;
+      line-height: 1.1;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      text-align: center;
     }
     .rep-box-container { display: flex; gap: 10px; margin: 1rem; }
     .rep-box {
@@ -59,19 +65,41 @@
     }
     .unit-label { color: white; margin-top: -10px; text-align: center; font-size: 1.8rem; }
     #exercise-advanced {
-      height: 4em;
+      min-height: 4.2em;
       display: flex;
       align-items: center;
+      gap: .75rem;
       justify-content: center;
-      color: yellow;
-      font-size: 1.6rem; border-color: yellow; white-space: pre-line; margin-top: 2rem; }
+      background: linear-gradient(135deg, #ffd54d, #ffb300);
+      color: #111;
+      border-color: #ffcc00;
+      font-size: 1.7rem;
+      font-weight: 700;
+      white-space: normal;
+      margin-top: 2rem;
+      position: relative;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    }
+    .adv-badge {
+      padding: .2rem .5rem;
+      background: #111;
+      color: #ffd54d;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      letter-spacing: .08em;
+    }
+    @keyframes advPulse { from { transform: scale(1); } 50% { transform: scale(1.03); } to { transform: scale(1); } }
+    .adv-pulse { animation: advPulse 1.2s ease-in-out 3; }
+
     button {
       background: #28a745; color: white; border: none; padding: 1.2rem 2rem; font-size: 1.5rem;
       border-radius: 12px; cursor: pointer;
-      transition: background 0.3s, transform 0.1s;
+      transition: background 0.3s, transform 0.1s, opacity 0.2s;
       margin-top: 2rem; width: 100%; max-width: 300px;
     }
     button:active { background: #218838; transform: scale(0.95); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    button:focus-visible { outline: 3px solid #8fd; outline-offset: 3px; }
   </style>
 </head>
 <body>
@@ -82,127 +110,186 @@
       <div id="rep-digit-1" class="rep-box">-</div>
       <div id="rep-digit-2" class="rep-box">-</div>
     </div>
-    <div class="unit-label" id="rep-unit"></div>
-    <div id="exercise-advanced" class="box"></div>
+    <div class="unit-label" id="rep-unit" aria-live="polite"></div>
+    <div id="exercise-advanced" class="box adv-pulse" aria-live="polite">
+      <span class="adv-badge" aria-hidden="true">ADVANCED</span>
+      <span id="adv-text">—</span>
+    </div>
     <button id="generate-btn">GO</button>
   </div>
 
   <script>
+    // =========================
+    // Config (single source of truth for timings)
+    // =========================
+    const CONFIG = {
+      NAME_SPIN_TICKS: 16,
+      DIGIT_SPIN_TICKS: 16,
+      TICK_MS: 50
+    };
+
+    // =========================
+    // Data
+    // =========================
     const RECENT_LIMIT = 10;
-let recentExercises = [];
-const exercises = [
-  { name: "Ankle Taps", reps: "5-10", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Bicycle Kicks", reps: "5-10", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Burpees", reps: "3-15", unit: "Reps", advanced: "Chest to ground, and Jump at top" },
-  { name: "Calf Raises", reps: "8-15", unit: "Reps", advanced: "Do for each leg separately" },
-  { name: "Crunches", reps: "8-15", unit: "Reps", advanced: "Add 5" },
-  { name: "Curtsy Lunges", reps: "8-10", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Fast High Knees", reps: "15/20/25/30", unit: "Seconds", advanced: "Add 10s" },
-  { name: "Flutter Kicks", reps: "15/20/25/30", unit: "Seconds", advanced: "Add 10s" },
-  { name: "Frog Squats", reps: "8-15", unit: "Reps", advanced: "Add 10" },
-  { name: "Good Mornings", reps: "5-10", unit: "Reps", advanced: "Add 5" },
-  { name: "Gorilla Press", reps: "10-20", unit: "Reps", advanced: "Add 10" },
-  { name: "Hollow Hold", reps: "10-25", unit: "Seconds", advanced: "Flutter your arms" },
-  { name: "Kick Sits", reps: "4-8", unit: "Reps", advanced: "Do them without complaining", side: true },
-  { name: "Leg Lowers", reps: "5-10", unit: "Reps", advanced: "Add 5" },
-  { name: "Mountain Climbers", reps: "8-20", unit: "Reps", advanced: "Crossbody Mountain Climbers", side: true },
-  { name: "Plank", reps: "30/40/50", unit: "Seconds", advanced: "Rock body forwards and backwards" },
-  { name: "Plank Swivels", reps: "4-12", unit: "Reps", advanced: "Add 5", side: true },
-  { name: "Press Ups", reps: "10-25", unit: "Reps", advanced: "Lift hands off ground each time" },
-  { name: "Reverse Crunch", reps: "8-15", unit: "Reps", advanced: "Add a torso twist at the top" },
-  { name: "Russian Twist", reps: "5-15", unit: "Reps", advanced: "Keep feet raised, add 5", side: true },
-  { name: "Shuttle Run or Lap", reps: "1-2", unit: "Reps", advanced: "Pressup at each cone or corner" },
-  { name: "Side Plank", reps: "20/25/30/35", unit: "Seconds", advanced: "Lower and raise hips", side: true },
-  { name: "Shoulder Taps", reps: "10-20", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Skaters", reps: "5-12", unit: "Reps", advanced: "Add 10", side: true },
-  { name: "Squat Hold or Wall Sit", reps: "30/35/40/45/50/60", unit: "Seconds", advanced: "Raise and lower heels" },
-  { name: "Squats", reps: "10-40", unit: "Reps", advanced: "Jump Squats instead" },
-  { name: "Star Jumps", reps: "15-35", unit: "Reps", advanced: "Explosive Jacks instead" },
-  { name: "Thread the Needle", reps: "5-10", unit: "Reps", advanced: "Do from Side Plank", side: true },
-  { name: "Tricep Dips", reps: "10-20", unit: "Reps", advanced: "Diamond Press Ups instead" },
-  { name: "Tuck Jumps", reps: "5-10", unit: "Reps", advanced: "Add 10" },
-  { name: "Yoga Planks", reps: "5-12", unit: "Reps", advanced: "Add 5", side: true }
-];
+    let recentExercises = [];
+    const exercises = [
+      { name: "Ankle Taps", reps: "5-10", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Bicycle Kicks", reps: "5-10", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Burpees", reps: "3-15", unit: "Reps", advanced: "Chest to ground, and Jump at top" },
+      { name: "Calf Raises", reps: "8-15", unit: "Reps", advanced: "Do for each leg separately" },
+      { name: "Crunches", reps: "8-15", unit: "Reps", advanced: "Add 5" },
+      { name: "Curtsy Lunges", reps: "8-10", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Fast High Knees", reps: "15/20/25/30", unit: "Seconds", advanced: "Add 10s" },
+      { name: "Flutter Kicks", reps: "15/20/25/30", unit: "Seconds", advanced: "Add 10s" },
+      { name: "Frog Squats", reps: "8-15", unit: "Reps", advanced: "Add 10" },
+      { name: "Good Mornings", reps: "5-10", unit: "Reps", advanced: "Add 5" },
+      { name: "Gorilla Press", reps: "10-20", unit: "Reps", advanced: "Add 10" },
+      { name: "Hollow Hold", reps: "10-25", unit: "Seconds", advanced: "Flutter your arms" },
+      { name: "Kick Sits", reps: "4-8", unit: "Reps", advanced: "Do them without complaining", side: true },
+      { name: "Leg Lowers", reps: "5-10", unit: "Reps", advanced: "Add 5" },
+      { name: "Mountain Climbers", reps: "8-20", unit: "Reps", advanced: "Crossbody Mountain Climbers", side: true },
+      { name: "Plank", reps: "30/40/50", unit: "Seconds", advanced: "Rock body forwards and backwards" },
+      { name: "Plank Swivels", reps: "4-12", unit: "Reps", advanced: "Add 5", side: true },
+      { name: "Press Ups", reps: "10-25", unit: "Reps", advanced: "Lift hands off ground each time" },
+      { name: "Reverse Crunch", reps: "8-15", unit: "Reps", advanced: "Add a torso twist at the top" },
+      { name: "Russian Twist", reps: "5-15", unit: "Reps", advanced: "Keep feet raised, add 5", side: true },
+      { name: "Shuttle Run or Lap", reps: "1-2", unit: "Reps", advanced: "Pressup at each cone or corner" },
+      { name: "Side Plank", reps: "20/25/30/35", unit: "Seconds", advanced: "Lower and raise hips", side: true },
+      { name: "Shoulder Taps", reps: "10-20", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Skaters", reps: "5-12", unit: "Reps", advanced: "Add 10", side: true },
+      { name: "Squat Hold or Wall Sit", reps: "30/35/40/45/50/60", unit: "Seconds", advanced: "Raise and lower heels" },
+      { name: "Squats", reps: "10-40", unit: "Reps", advanced: "Jump Squats instead" },
+      { name: "Star Jumps", reps: "15-35", unit: "Reps", advanced: "Explosive Jacks instead" },
+      { name: "Thread the Needle", reps: "5-10", unit: "Reps", advanced: "Do from Side Plank", side: true },
+      { name: "Tricep Dips", reps: "10-20", unit: "Reps", advanced: "Diamond Press Ups instead" },
+      { name: "Tuck Jumps", reps: "5-10", unit: "Reps", advanced: "Add 10" },
+      { name: "Yoga Planks", reps: "5-12", unit: "Reps", advanced: "Add 5", side: true }
+    ];
+
+    // =========================
+    // DOM helpers
+    // =========================
     const $ = id => document.getElementById(id);
+    const els = {
+      name: $("exercise-name"),
+      d1: $("rep-digit-1"),
+      d2: $("rep-digit-2"),
+      unit: $("rep-unit"),
+      advBox: $("exercise-advanced"),
+      advText: $("adv-text"),
+      btn: $("generate-btn")
+    };
+
     const padNumber = n => n.toString().padStart(2, '0');
 
+    // =========================
+    // Logic
+    // =========================
     function parseReps(reps) {
-      if (reps.includes('/')) {
-        const options = reps.split('/').map(r => r.trim());
+      const str = String(reps).trim();
+      if (str.includes('/')) {
+        const options = str.split('/').map(r => r.trim());
         return options[Math.floor(Math.random() * options.length)];
       }
-      if (reps.includes('-')) {
-        const [min, max] = reps.split('-').map(Number);
+      if (str.includes('-')) {
+        const [min, max] = str.split('-').map(Number);
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
-      return reps;
+      return str;
     }
 
     function getRandomExerciseIndex() {
-      const available = exercises
-        .map((_, i) => i)
-        .filter(i => !recentExercises.includes(i));
+      const available = exercises.map((_, i) => i).filter(i => !recentExercises.includes(i));
       const pool = available.length > 0 ? available : exercises.map((_, i) => i);
       const idx = pool[Math.floor(Math.random() * pool.length)];
       recentExercises.push(idx);
-      if (recentExercises.length > RECENT_LIMIT) recentExercises.shift();
+      if (recentExercises.length > Math.min(RECENT_LIMIT, exercises.length - 1)) recentExercises.shift();
       return idx;
     }
 
-    function animateDigits(number, unit, side) {
-      const d1 = $("rep-digit-1"), d2 = $("rep-digit-2"), unitLabel = $("rep-unit");
-      const padded = padNumber(number);
+    function animateDigits(number, onDone) {
+      const repsNum = parseInt(number, 10);
+      const isNumber = !isNaN(repsNum);
+      if (!isNumber) { onDone && onDone(); return; }
+
+      const padded = padNumber(repsNum);
       let ticks = 0;
-      const maxTicks = 16;
       const spinner = setInterval(() => {
-        d1.textContent = Math.floor(Math.random() * 10);
-        d2.textContent = Math.floor(Math.random() * 10);
-        if (++ticks >= maxTicks) {
+        els.d1.textContent = Math.floor(Math.random() * 10);
+        els.d2.textContent = Math.floor(Math.random() * 10);
+        if (++ticks >= CONFIG.DIGIT_SPIN_TICKS) {
           clearInterval(spinner);
-          d1.textContent = padded[0];
-          d2.textContent = padded[1];
-          unitLabel.textContent = `${unit}${side ? ' (each side)' : ''}`;
+          els.d1.textContent = padded[0];
+          els.d2.textContent = padded[1];
+          onDone && onDone();
         }
-      }, 50);
+      }, CONFIG.TICK_MS);
     }
 
     function animateExerciseName(finalName, onComplete) {
-      const nameBox = $("exercise-name");
+      const spinValues = exercises.map(e => e.name);
       let ticks = 0;
-      const spinCount = 16;
       const spinner = setInterval(() => {
-        const randIdx = Math.floor(Math.random() * exercises.length);
-        nameBox.textContent = exercises[randIdx].name;
-        if (++ticks >= spinCount) {
+        const randIdx = Math.floor(Math.random() * spinValues.length);
+        els.name.textContent = spinValues[randIdx];
+        if (++ticks >= CONFIG.NAME_SPIN_TICKS) {
           clearInterval(spinner);
-          nameBox.textContent = finalName;
+          els.name.textContent = finalName;
           if (typeof onComplete === 'function') onComplete();
         }
-      }, 50);
+      }, CONFIG.TICK_MS);
+    }
+
+    function setUnitNow(unit, side) {
+      els.unit.textContent = `${unit}${side ? ' (each side)' : ''}`;
+    }
+
+    function setAdvancedText(text) {
+      // Ensure text node exists
+      if (!els.advText) {
+        const span = document.createElement('span');
+        span.id = 'adv-text';
+        els.advBox.appendChild(span);
+        els.advText = span;
+      }
+      els.advText.textContent = text || 'None';
+      // retrigger attention pulse each roll
+      els.advBox.classList.remove('adv-pulse');
+      void els.advBox.offsetWidth; // reflow to restart CSS animation
+      els.advBox.classList.add('adv-pulse');
     }
 
     function generateExercise() {
+      // Prevent double clicks / races
+      if (els.btn.disabled) return;
+      els.btn.disabled = true;
+
       const idx = getRandomExerciseIndex();
       const exercise = exercises[idx];
       const repsRaw = parseReps(exercise.reps);
       const repsNum = parseInt(repsRaw, 10);
+      const isNumber = !isNaN(repsNum);
 
+      // Context first
+      setUnitNow(exercise.unit, !!exercise.side);
+      setAdvancedText(exercise.advanced);
+
+      // Prepare digits
+      els.d1.textContent = isNumber ? '' : '-';
+      els.d2.textContent = isNumber ? '' : '-';
+
+      // Name spin -> digits spin -> enable button
       animateExerciseName(exercise.name, () => {
-        $("exercise-advanced").textContent = `Advanced Option:\n${exercise.advanced || "None"}`;
-
-        const isNumber = !isNaN(repsNum);
-        $("rep-digit-1").textContent = isNumber ? '' : '-';
-        $("rep-digit-2").textContent = isNumber ? '' : '-';
-
         if (isNumber) {
-          animateDigits(repsNum, exercise.unit, exercise.side);
+          animateDigits(repsNum, () => { els.btn.disabled = false; });
         } else {
-          $("rep-unit").textContent = `${exercise.unit}${exercise.side ? ' (each side)' : ''}`;
+          els.btn.disabled = false;
         }
       });
     }
 
-    $("generate-btn").addEventListener("click", generateExercise);
+    els.btn.addEventListener('click', generateExercise);
   </script>
 </body>
 </html>
