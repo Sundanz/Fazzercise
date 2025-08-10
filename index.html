@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fazzercize Randomizer</title>
   <style>
+    html, body { height: 100%; }
     body {
       padding: 1rem;
       box-sizing: border-box;
@@ -17,12 +18,15 @@
       justify-content: center;
       height: 100vh;
       margin: 0;
+      overflow-y: hidden; /* prevent layout nudges on spin */
     }
+
     @media (max-width: 600px) {
       .rep-box { width: 40px; height: 40px; font-size: 1.5rem; }
       .box { font-size: 1.4rem; width: 90%; min-width: unset; }
       button { padding: 1.5rem 2rem; font-size: 1.2rem; }
     }
+
     h1 { margin-bottom: 2rem; }
     .card {
       background: #2b2b2b;
@@ -37,24 +41,25 @@
       border: 2px solid; border-radius: 12px; min-width: 300px;
       text-align: center;
     }
+
+    /* Fixed-height, two-line name box to prevent jitter */
     #exercise-name {
       background: white;
       color: black;
       border-color: white;
       font-weight: bold;
       font-size: 2.2rem;
-      /* fixed visual height (2 lines clamp) to prevent jitter */
-      height: 4.4rem;
-      line-height: 1.1;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      line-height: 1.2;
+      height: calc(2 * 1.2em); /* exactly two lines tall */
       overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
+      text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      text-align: center;
     }
+
     .rep-box-container { display: flex; gap: 10px; margin: 1rem; }
     .rep-box {
       font-size: 2.4rem; font-weight: bold;
@@ -64,18 +69,21 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .unit-label { color: white; margin-top: -10px; text-align: center; font-size: 1.8rem; }
+
+    /* Advanced box: badge ABOVE the text, vertical stack */
     #exercise-advanced {
-      min-height: 4.2em;
+      min-height: 4.2em; /* keeps the card steady even when text is blank during spin */
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: .75rem;
+      gap: .5rem;
       justify-content: center;
       background: linear-gradient(135deg, #ffd54d, #ffb300);
       color: #111;
       border-color: #ffcc00;
       font-size: 1.7rem;
       font-weight: 700;
-      white-space: normal;
+      text-align: center;
       margin-top: 2rem;
       position: relative;
       box-shadow: 0 6px 20px rgba(0,0,0,0.35);
@@ -88,6 +96,8 @@
       font-size: 0.9rem;
       letter-spacing: .08em;
     }
+    #adv-text { min-height: 1.2em; } /* holds space for single-line text */
+
     @keyframes advPulse { from { transform: scale(1); } 50% { transform: scale(1.03); } to { transform: scale(1); } }
     .adv-pulse { animation: advPulse 1.2s ease-in-out 3; }
 
@@ -106,15 +116,19 @@
   <h1>Fazzercize Randomizer</h1>
   <div class="card">
     <div id="exercise-name" class="box" aria-live="polite">Press the button to start!</div>
+
     <div class="rep-box-container">
       <div id="rep-digit-1" class="rep-box">-</div>
       <div id="rep-digit-2" class="rep-box">-</div>
     </div>
+
     <div class="unit-label" id="rep-unit" aria-live="polite"></div>
+
     <div id="exercise-advanced" class="box adv-pulse" aria-live="polite">
-      <span class="adv-badge" aria-hidden="true">ADVANCED</span>
-      <span id="adv-text">—</span>
+      <div class="adv-badge" aria-hidden="true">ADVANCED</div>
+      <div id="adv-text">—</div>
     </div>
+
     <button id="generate-btn">GO</button>
   </div>
 
@@ -122,9 +136,10 @@
     // =========================
     // Config (single source of truth for timings)
     // =========================
+    const PREFERS_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const CONFIG = {
-      NAME_SPIN_TICKS: 16,
-      DIGIT_SPIN_TICKS: 16,
+      NAME_SPIN_TICKS: PREFERS_REDUCED ? 6 : 16,
+      DIGIT_SPIN_TICKS: PREFERS_REDUCED ? 6 : 16,
       TICK_MS: 50
     };
 
@@ -210,8 +225,12 @@
 
     function animateDigits(number, onDone) {
       const repsNum = parseInt(number, 10);
-      const isNumber = !isNaN(repsNum);
+      const isNumber = !Number.isNaN(repsNum);
       if (!isNumber) { onDone && onDone(); return; }
+
+      // Hide random spin from screen readers
+      els.d1.setAttribute('aria-hidden', 'true');
+      els.d2.setAttribute('aria-hidden', 'true');
 
       const padded = padNumber(repsNum);
       let ticks = 0;
@@ -222,6 +241,8 @@
           clearInterval(spinner);
           els.d1.textContent = padded[0];
           els.d2.textContent = padded[1];
+          els.d1.removeAttribute('aria-hidden');
+          els.d2.removeAttribute('aria-hidden');
           onDone && onDone();
         }
       }, CONFIG.TICK_MS);
@@ -245,16 +266,21 @@
       els.unit.textContent = `${unit}${side ? ' (each side)' : ''}`;
     }
 
+    // Advanced text reveal happens AFTER reps spin completes
+    let pendingAdvancedText = '';
+
     function setAdvancedText(text) {
-      // Ensure text node exists
+      // Ensure node exists (defensive in case of future refactors)
       if (!els.advText) {
-        const span = document.createElement('span');
+        const span = document.createElement('div');
         span.id = 'adv-text';
         els.advBox.appendChild(span);
         els.advText = span;
       }
-      els.advText.textContent = text || 'None';
-      // retrigger attention pulse each roll
+      const clean = (text ?? '').toString().trim();
+      els.advText.textContent = clean || 'None';
+
+      // retrigger attention pulse each reveal
       els.advBox.classList.remove('adv-pulse');
       void els.advBox.offsetWidth; // reflow to restart CSS animation
       els.advBox.classList.add('adv-pulse');
@@ -267,29 +293,47 @@
 
       const idx = getRandomExerciseIndex();
       const exercise = exercises[idx];
+
       const repsRaw = parseReps(exercise.reps);
       const repsNum = parseInt(repsRaw, 10);
-      const isNumber = !isNaN(repsNum);
+      const isNumber = !Number.isNaN(repsNum);
 
-      // Context first
+      // Context first: show correct unit immediately
       setUnitNow(exercise.unit, !!exercise.side);
-      setAdvancedText(exercise.advanced);
+
+      // Prepare Advanced: keep hidden during spin to sell randomizing effect
+      pendingAdvancedText = exercise.advanced;
+      els.advText.textContent = ''; // blank until reps/seconds are finalized
 
       // Prepare digits
       els.d1.textContent = isNumber ? '' : '-';
       els.d2.textContent = isNumber ? '' : '-';
 
-      // Name spin -> digits spin -> enable button
+      // Name spin -> digits spin -> reveal Advanced -> enable button
       animateExerciseName(exercise.name, () => {
         if (isNumber) {
-          animateDigits(repsNum, () => { els.btn.disabled = false; });
+          animateDigits(repsNum, () => {
+            setAdvancedText(pendingAdvancedText); // reveal AFTER digits finalize
+            els.btn.disabled = false;
+          });
         } else {
+          // Non-numeric (edge case): reveal immediately after name spin
+          setAdvancedText(pendingAdvancedText);
           els.btn.disabled = false;
         }
       });
     }
 
+    // Button click
     els.btn.addEventListener('click', generateExercise);
+
+    // Keyboard activation for accessibility
+    els.btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        generateExercise();
+      }
+    });
   </script>
 </body>
 </html>
